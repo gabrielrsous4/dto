@@ -19,7 +19,6 @@
     </style>
 </head>
 <body class="text-gray-800">
-
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
         <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
         <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
@@ -55,10 +54,9 @@
         
         let db, auth, userId;
         let localDtoData = {};
-        const appId = 'dto_checklist_global_app';
-
-        const getDefinitionsPath = () => `dto_definitions_${appId}`;
-        const getResultsPath = () => `dto_results_${appId}`;
+        
+        const getDefinitionsPath = () => `dto_definitions`;
+        const getResultsPath = () => `dto_results`;
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -108,7 +106,7 @@
                 localDtoData = {};
                 const dtos = [];
                 snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
-                dtos.sort((a,b) => a.data.name.localeCompare(b.data.name));
+                dtos.sort((a,b) => a.name.localeCompare(b.name));
                 dtos.forEach(dto => { localDtoData[dto.id] = dto; });
                 populateDtoSelector();
             });
