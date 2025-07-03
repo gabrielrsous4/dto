@@ -3,340 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist DTO (Standalone)</title>
+    <title>Checklist DTO - Realizar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
-        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; background-color: transparent; transition: all 0.2s; cursor: pointer; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; }
         .nav-btn:hover { background-color: #e0e7ff; }
-        .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 100; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
+        .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.success { background-color: #22c55e; } .toast.error { background-color: #ef4444; }
         .modal-wrapper { transition: opacity 300ms ease-in-out; }
         .modal-content { transition: all 300ms ease-out; }
-        .modal-enter .modal-content { opacity: 0; transform: scale(0.95); }
-        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-        .animate-shake { animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-
+<body class="text-gray-800">
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
-        <header class="text-center mb-6">
-            <div class="flex justify-between items-center relative">
-                <div class="text-left text-xs text-gray-400">ID: <span id="userIdDisplay" class="font-mono">Carregando...</span><span id="adminIndicator" class="hidden ml-2 font-bold text-yellow-600">[ADMIN]</span></div>
-                <h1 class="text-4xl font-bold text-indigo-600 absolute left-1/2 -translate-x-1/2">Checklist DTO</h1>
-                <button id="logoutButton" class="hidden bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-lg hover:bg-red-600">Sair</button>
-            </div>
-        </header>
-
+        <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
         <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
-            <button id="navHome" class="nav-btn">Realizar DTO</button>
-            <button id="navHistory" class="nav-btn">Histórico</button>
-            <button id="navAdmin" class="nav-btn">Admin</button>
+            <a href="index.html" class="nav-btn active">Realizar DTO</a>
+            <a href="historico.html" class="nav-btn">Histórico</a>
+            <a href="admin.html" class="nav-btn">Admin</a>
         </nav>
-
-        <div id="pageContainer"></div>
+        <main class="bg-white p-6 rounded-2xl shadow-lg">
+            <form id="mainDtoForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b pb-6">
+                    <h2 class="col-span-full text-xl font-bold text-gray-700">Informações do DTO</h2>
+                    <div><label for="userName" class="block text-sm font-medium">Seu Nome</label><input type="text" id="userName" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="responsibleName" class="block text-sm font-medium">Responsável</label><input type="text" id="responsibleName" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="dtoReason" class="block text-sm font-medium">Motivo</label><input type="text" id="dtoReason" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="dtoDate" class="block text-sm font-medium">Data</label><input type="date" id="dtoDate" class="mt-1 w-full p-2 border rounded-md" required></div>
+                </div>
+                <div class="mb-6">
+                    <label for="dtoTypeSelector" class="block text-lg font-bold text-gray-700 mb-2">Selecione o Checklist</label>
+                    <select id="dtoTypeSelector" class="w-full p-3 bg-gray-50 border rounded-lg" required><option value="">-- Carregando... --</option></select>
+                </div>
+                <div id="dtoQuestionsContainer" class="space-y-6"></div>
+                <div class="mt-8 text-center"><button type="submit" id="submitButton" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400" disabled>Submeter DTO</button></div>
+            </form>
+        </main>
     </div>
     <div id="modalContainer"></div>
     <div id="toastContainer"></div>
-    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, doc, setDoc, deleteDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Variáveis Globais ---
-        let db, auth, userId, userIsAdmin = false;
-        let localDtoData = {}, allHistoryData = [], unsubscribeListeners = [];
-        
-        const ui = {
-            userIdDisplay: document.getElementById('userIdDisplay'),
-            adminIndicator: document.getElementById('adminIndicator'),
-            logoutButton: document.getElementById('logoutButton'),
-            navHome: document.getElementById('navHome'),
-            navHistory: document.getElementById('navHistory'),
-            navAdmin: document.getElementById('navAdmin'),
-        };
-        
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        const firebaseConfig = { <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist DTO - Realizar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; }
+        .nav-btn:hover { background-color: #e0e7ff; }
+        .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: #22c55e; } .toast.error { background-color: #ef4444; }
+        .modal-wrapper { transition: opacity 300ms ease-in-out; }
+        .modal-content { transition: all 300ms ease-out; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
+        <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
+            <a href="index.html" class="nav-btn active">Realizar DTO</a>
+            <a href="historico.html" class="nav-btn">Histórico</a>
+            <a href="admin.html" class="nav-btn">Admin</a>
+        </nav>
+        <main class="bg-white p-6 rounded-2xl shadow-lg">
+            <form id="mainDtoForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b pb-6">
+                    <h2 class="col-span-full text-xl font-bold text-gray-700">Informações do DTO</h2>
+                    <div><label for="userName" class="block text-sm font-medium">Seu Nome</label><input type="text" id="userName" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="responsibleName" class="block text-sm font-medium">Responsável</label><input type="text" id="responsibleName" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="dtoReason" class="block text-sm font-medium">Motivo</label><input type="text" id="dtoReason" class="mt-1 w-full p-2 border rounded-md" required></div>
+                    <div><label for="dtoDate" class="block text-sm font-medium">Data</label><input type="date" id="dtoDate" class="mt-1 w-full p-2 border rounded-md" required></div>
+                </div>
+                <div class="mb-6">
+                    <label for="dtoTypeSelector" class="block text-lg font-bold text-gray-700 mb-2">Selecione o Checklist</label>
+                    <select id="dtoTypeSelector" class="w-full p-3 bg-gray-50 border rounded-lg" required><option value="">-- Carregando... --</option></select>
+                </div>
+                <div id="dtoQuestionsContainer" class="space-y-6"></div>
+                <div class="mt-8 text-center"><button type="submit" id="submitButton" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400" disabled>Submeter DTO</button></div>
+            </form>
+        </main>
+    </div>
+    <div id="modalContainer"></div>
+    <div id="toastContainer"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        const firebaseConfig = { /* COLE AS SUAS CREDENCIAIS AQUI */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId;
+        let localDtoData = {};
         const getDefinitionsPath = () => `dto_definitions`;
         const getResultsPath = () => `dto_results`;
-
-        // --- LÓGICA DE NAVEGAÇÃO E RENDERIZAÇÃO ---
-        function navigateTo(page) {
-            if (page === 'admin' && !userIsAdmin) { promptForAdminLogin(); return; }
-            unsubscribeAll();
-            
-            const pageContainer = document.getElementById('pageContainer');
-            if (page === 'home') loadHomePage(pageContainer);
-            if (page === 'history') loadHistoryPage(pageContainer);
-            if (page === 'admin') loadAdminPage(pageContainer);
-
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            ui[`nav${page.charAt(0).toUpperCase() + page.slice(1)}`].classList.add('active');
-        }
-        
-        function showModal(html) {
-            const modalWrapper = document.createElement('div');
-            modalWrapper.innerHTML = html;
-            const modal = modalWrapper.firstElementChild;
-            document.getElementById('modalContainer').innerHTML = '';
-            document.getElementById('modalContainer').appendChild(modal);
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                if (modal.querySelector('.modal-content')) {
-                   modal.querySelector('.modal-content').classList.remove('opacity-0', 'scale-95');
-                }
-            }, 10);
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('modalContainer').firstElementChild;
-            if (modal) {
-                if(modal.querySelector('.modal-content')) {
-                   modal.querySelector('.modal-content').classList.add('opacity-0', 'scale-95');
-                }
-                modal.classList.add('opacity-0');
-                setTimeout(() => { document.getElementById('modalContainer').innerHTML = ''; }, 300);
-            }
-        }
-
-        function showNotification(message, type = 'success') {
-            const toastContainer = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-        
-        // --- INICIALIZAÇÃO DO FIREBASE E AUTENTICAÇÃO ---
-        async function setupFirebase() {
-            try {
-                // ***************************************************************
-                // ** COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI ABAIXO **
-                // ***************************************************************
-                const firebaseConfig = {
-  apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
-  authDomain: "sistema-dto.firebaseapp.com",
-  projectId: "sistema-dto",
-  storageBucket: "sistema-dto.firebasestorage.app",
-  messagingSenderId: "891349230977",
-  appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG"
-};
-                // ***************************************************************
-
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        ui.userIdDisplay.textContent = userId.substring(0, 8) + '...';
-                        ui.logoutButton.classList.remove('hidden');
-                        ui.navAdmin.classList.remove('hidden');
-                    } else {
-                        userId = null; userIsAdmin = false;
-                        ui.userIdDisplay.textContent = 'Desconectado';
-                        ui.adminIndicator.classList.add('hidden');
-                        ui.logoutButton.classList.add('hidden');
-                        ui.navAdmin.classList.add('hidden');
-                    }
-                    navigateTo('home');
-                });
-                
-                if (!auth.currentUser) { await signInAnonymously(auth); }
-
-            } catch (error) {
-                console.error("Erro na inicialização do Firebase:", error);
-                document.body.innerHTML = `<div class="text-center p-8 text-red-600">Falha crítica ao conectar com o serviço. Verifique se as credenciais do Firebase foram coladas corretamente no código e se as regras de segurança do Firestore estão corretas.</div>`;
-            }
-        }
-        
-        function unsubscribeAll() { unsubscribeListeners.forEach(unsub => unsub()); unsubscribeListeners = []; }
-        
-        // --- LÓGICA DAS PÁGINAS ---
-        function loadHomePage(container) {
-            container.innerHTML = `<main class="bg-white p-6 rounded-2xl shadow-lg"><form id="mainDtoForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 border-b pb-6"><h2 class="col-span-full text-xl font-bold text-gray-700">Informações do DTO</h2><div><label for="userName" class="block text-sm font-medium">Seu Nome</label><input type="text" id="userName" class="mt-1 w-full p-2 border rounded-md" required></div><div><label for="responsibleName" class="block text-sm font-medium">Responsável</label><input type="text" id="responsibleName" class="mt-1 w-full p-2 border rounded-md" required></div><div><label for="dtoReason" class="block text-sm font-medium">Motivo</label><input type="text" id="dtoReason" class="mt-1 w-full p-2 border rounded-md" required></div><div><label for="dtoDate" class="block text-sm font-medium">Data</label><input type="date" id="dtoDate" class="mt-1 w-full p-2 border rounded-md" required></div></div><div class="mb-6"><label for="dtoTypeSelector" class="block text-lg font-bold text-gray-700 mb-2">Selecione o Checklist</label><select id="dtoTypeSelector" class="w-full p-3 bg-gray-50 border rounded-lg" required><option value="">-- Carregando... --</option></select></div><div id="dtoQuestionsContainer" class="space-y-6"></div><div class="mt-8 text-center"><button type="submit" id="submitButton" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400" disabled>Submeter DTO</button></div></form></main>`;
-            document.getElementById('dtoDate').valueAsDate = new Date();
-            loadAndPopulateDtos();
-        }
-
-        function loadHistoryPage(container) {
-            container.innerHTML = `<section><h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800"></h2><div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-4 gap-4"><input type="text" id="filterName" placeholder="Filtrar por nome..." class="p-2 border rounded-md"><select id="filterDtoType" class="p-2 border rounded-md bg-white"></select><input type="date" id="filterDate" class="p-2 border rounded-md"><button id="exportExcelButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Exportar Excel</button></div><div id="historyContainer" class="space-y-4"><p class="text-center text-gray-500">Carregando...</p></div></section>`;
-            loadHistory();
-        }
-
-        function loadAdminPage(container) {
-            container.innerHTML = `<section><h2 class="text-3xl font-bold text-center mb-6 text-gray-800">Painel do Administrador</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-indigo-800" id="statTotalDtos">0</p><p class="text-sm text-indigo-600">Total de DTOs</p></div><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-green-800" id="statAvgAssert">0%</p><p class="text-sm text-green-600">Média de Assertividade</p></div><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-yellow-800" id="statRecentDtos">0</p><p class="text-sm text-yellow-600">DTOs (últimos 7 dias)</p></div></div><div class="bg-white p-6 rounded-2xl shadow-lg"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Gerenciar DTOs</h3><div class="flex gap-2"><button id="importExcelButtonAdmin" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Importar</button><button id="addDtoButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">+ Novo DTO</button></div></div><div id="adminDtoList" class="space-y-3"><p class="text-center text-gray-500">Carregando...</p></div></div></section><input type="file" id="importInput" class="hidden" accept=".xlsx, .xls">`;
-            loadHistory();
-            loadAdminDtoList();
-        }
-
-        // --- LÓGICA DE ADMINISTRAÇÃO ---
-        function promptForAdminLogin() {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full transition-all duration-300 opacity-0 scale-95"><h2 class="text-xl font-bold mb-4">Acesso Restrito</h2><p class="text-gray-600 mb-6">Insira a senha de administrador.</p><form id="passwordForm"><input type="password" id="adminPasswordInput" class="w-full p-2 border rounded-md" required><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Entrar</button></div></form></div></div>`;
-            showModal(modalHTML);
-        }
-
-        function handleAdminLoginAttempt(event) {
-            event.preventDefault();
-            const passwordInput = document.getElementById('adminPasswordInput');
-            if (passwordInput.value === "admin") {
-                userIsAdmin = true;
-                ui.adminIndicator.classList.remove('hidden');
-                closeModal();
-                navigateTo('admin');
-            } else {
-                passwordInput.classList.add('border-red-500', 'animate-shake');
-                setTimeout(() => passwordInput.classList.remove('border-red-500', 'animate-shake'), 800);
-            }
-        }
-
-        function loadAdminDtoList() {
-            if (!userIsAdmin) return;
-            const unsub = onSnapshot(collection(db, getDefinitionsPath()), (snapshot) => {
-                const adminDtoList = document.getElementById('adminDtoList');
-                if (!adminDtoList) return;
-                adminDtoList.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">Nenhum DTO cadastrado.</p>' : '';
-                const dtos = [];
-                snapshot.forEach(doc => dtos.push({ id: doc.id, data: doc.data() }));
-                dtos.sort((a,b) => a.data.name.localeCompare(b.data.name)).forEach(dto => {
-                    const item = document.createElement('div');
-                    item.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
-                    item.innerHTML = `<span class="font-medium">${dto.data.name}</span><div class="space-x-2"><button data-id="${dto.id}" class="edit-btn text-sm text-blue-600 hover:underline">Editar</button><button data-id="${dto.id}" class="delete-btn text-sm text-red-600 hover:underline">Excluir</button></div>`;
-                    adminDtoList.appendChild(item);
-                });
-            });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        function openAdminDtoModal(dto = null) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full transition-all duration-300 opacity-0 scale-95"><h2 class="text-2xl font-bold mb-6">${dto ? 'Editar' : 'Criar Novo'} DTO</h2><form id="adminDtoForm"><input type="hidden" id="adminDtoId" value="${dto ? dto.id : ''}"><div class="mb-4"><label for="adminDtoName" class="block text-sm font-medium">Nome do DTO</label><input type="text" id="adminDtoName" class="mt-1 w-full p-2 border rounded-md" required value="${dto ? dto.data.name : ''}"></div><div class="mb-4"><h4 class="text-sm font-medium mb-2">Perguntas</h4><div id="adminQuestionsContainer" class="space-y-2"></div><button type="button" id="addQuestionButton" class="mt-3 text-sm text-indigo-600 font-semibold">+ Adicionar Pergunta</button></div><div class="mt-8 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Salvar</button></div></form></div></div>`;
-            showModal(modalHTML);
-            const questions = dto ? dto.data.questions : [''];
-            questions.forEach(q => addQuestionInput(q));
-        }
-
-        function addQuestionInput(value = '') {
-            const container = document.getElementById('adminQuestionsContainer');
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-2';
-            div.innerHTML = `<input type="text" value="${value.replace(/"/g, '&quot;')}" class="question-input flex-grow p-2 border rounded-md" required><button type="button" class="delete-question-btn text-red-600">X</button>`;
-            div.querySelector('.delete-question-btn').onclick = () => div.remove();
-            container.appendChild(div);
-        }
-
-        async function saveAdminDto(event) {
-            event.preventDefault();
-            const dtoId = document.getElementById('adminDtoId').value;
-            const dtoName = document.getElementById('adminDtoName').value.trim();
-            const questionNodes = document.getElementById('adminQuestionsContainer').querySelectorAll('.question-input');
-            const questions = Array.from(questionNodes).map(input => input.value.trim()).filter(q => q);
-
-            if (!dtoName || questions.length === 0) { showNotification("Nome e pelo menos uma pergunta são obrigatórios.", "error"); return; }
-            
-            const dtoData = { name: dtoName, questions };
-            try {
-                if (dtoId) { await setDoc(doc(db, getDefinitionsPath(), dtoId), dtoData); } 
-                else { await addDoc(collection(db, getDefinitionsPath()), dtoData); }
-                closeModal();
-                showNotification(`DTO "${dtoName}" salvo com sucesso.`, 'success');
-            } catch (error) { console.error("Erro ao salvar DTO:", error); showNotification("Erro ao salvar DTO.", "error"); }
-        }
-        
-        function confirmDeleteDto(dtoId) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full transition-all duration-300 opacity-0 scale-95"><h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2><p class="text-gray-600 mb-6">Tem certeza que deseja excluir este DTO? Esta ação não pode ser desfeita.</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="button" id="confirmDeleteButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Excluir</button></div></div></div>`;
-            showModal(modalHTML);
-            document.getElementById('confirmDeleteButton').onclick = async () => {
-                try { 
-                    await deleteDoc(doc(db, getDefinitionsPath(), dtoId));
-                    closeModal();
-                    showNotification('DTO excluído com sucesso.', 'success');
-                } catch (error) { console.error("Erro ao excluir DTO:", error); showNotification('Erro ao excluir DTO.', 'error'); }
-            };
-        }
-
-        async function importFromExcel(file) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
-
-                    if (json.length === 0) { showNotification("Ficheiro Excel vazio ou mal formatado.", "error"); return; }
-
-                    const batch = writeBatch(db);
-                    let count = 0;
-                    json.forEach(row => {
-                        const percentage = row['Assertividade (%)'] || 0;
-                        const answers = [];
-                        for (let i = 1; ; i++) {
-                            const questionKey = `Pergunta ${i}`;
-                            const answerKey = `Resposta ${i}`;
-                            const obsKey = `Observação ${i}`;
-                            if (row[questionKey] === undefined) break;
-                            answers.push({ question: row[questionKey] || 'N/A', answer: row[answerKey] || 'N/A', observation: row[obsKey] || '' });
-                        }
-
-                        const record = {
-                            dtoDate: row['Data do DTO'] ? new Date((row['Data do DTO'] - (25567 + 2)) * 86400 * 1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                            userName: row['Nome do Colaborador'] || 'N/A',
-                            responsibleName: row['Responsável'] || 'N/A',
-                            dtoType: row['Tipo de DTO'] || 'Importado',
-                            dtoReason: row['Motivo'] || 'Importado do Excel',
-                            percentage: percentage,
-                            legend: row['Recomendação'] || (percentage >= 80 ? 'Parabéns, você está engajado ao processo. Realizar um novo DTO depois de 60 dias.' : 'Infelizmente, este funcionário não está tão engajado. Realize um coaching sobre o processo e reavalie novamente em 7 dias.'),
-                            answers: answers, 
-                            createdAt: serverTimestamp(),
-                            submitterId: userId
-                        };
-                        const docRef = doc(collection(db, getResultsPath()));
-                        batch.set(docRef, record);
-                        count++;
-                    });
-                    await batch.commit();
-                    showNotification(`${count} registos importados com sucesso!`, 'success');
-                } catch (error) {
-                    console.error("Erro ao importar ficheiro:", error);
-                    showNotification("Erro ao processar o ficheiro Excel.", "error");
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // --- LÓGICA DO USUÁRIO E DTO ---
+        function showNotification(message, type = 'success') { /* ... */ }
+        function showResultModal(percentage, legend) { /* ... */ }
+        function closeModal() { /* ... */ }
         function loadAndPopulateDtos() {
-            const unsub = onSnapshot(collection(db, getDefinitionsPath()), (snapshot) => {
+            onSnapshot(collection(db, getDefinitionsPath()), (snapshot) => {
                 localDtoData = {};
-                const selector = document.getElementById('dtoTypeSelector');
-                if (!selector) return;
                 const dtos = [];
                 snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
                 dtos.sort((a,b) => a.name.localeCompare(b.name));
-                selector.innerHTML = '<option value="">-- Selecione um DTO --</option>';
-                dtos.forEach(dto => {
-                    localDtoData[dto.id] = dto;
-                    selector.innerHTML += `<option value="${dto.id}">${dto.name}</option>`;
-                });
+                dtos.forEach(dto => { localDtoData[dto.id] = dto; });
+                populateDtoSelector();
             });
-            unsubscribeListeners.push(unsub);
         }
-
+        function populateDtoSelector() {
+            const selector = document.getElementById('dtoTypeSelector');
+            if (!selector) return;
+            selector.innerHTML = '<option value="">-- Selecione um DTO --</option>';
+            for (const id in localDtoData) {
+                selector.innerHTML += `<option value="${id}">${localDtoData[id].name}</option>`;
+            }
+        }
         function renderQuestions(dtoId) {
             const container = document.getElementById('dtoQuestionsContainer');
             const button = document.getElementById('submitButton');
@@ -344,21 +138,17 @@
             const questions = localDtoData[dtoId]?.questions || [];
             container.innerHTML = ''; 
             button.disabled = questions.length === 0;
-
             questions.forEach((question, index) => {
                 const qId = `q${index}`;
                 container.innerHTML += `<div class="p-4 border rounded-lg bg-gray-50/50"><p class="font-medium mb-3">${index + 1}. ${question}</p><div class="flex flex-col sm:flex-row items-center gap-4"><div class="flex items-center gap-4"><label class="flex items-center cursor-pointer"><input type="radio" name="${qId}" value="Sim" class="form-radio h-5 w-5 text-green-600" required><span class="ml-2 text-green-700 font-semibold">Sim</span></label><label class="flex items-center cursor-pointer"><input type="radio" name="${qId}" value="Não" class="form-radio h-5 w-5 text-red-600" required><span class="ml-2 text-red-700 font-semibold">Não</span></label></div><input type="text" id="${qId}-obs" placeholder="Observação (opcional)" class="flex-grow p-2 border rounded-md"></div></div>`;
             });
         }
-
         async function submitDtoForm(event) {
             event.preventDefault();
             const form = document.getElementById('mainDtoForm');
             if (!form.checkValidity()) { form.reportValidity(); return; }
-            
             const fields = { userName: document.getElementById('userName').value.trim(), responsibleName: document.getElementById('responsibleName').value.trim(), dtoReason: document.getElementById('dtoReason').value.trim(), dtoDate: document.getElementById('dtoDate').value, dtoId: document.getElementById('dtoTypeSelector').value };
             if (Object.values(fields).some(val => !val)) { showNotification('Por favor, preencha todos os campos de informação.', 'error'); return; }
-
             const questions = localDtoData[fields.dtoId]?.questions || [];
             const answers = [];
             let yesCount = 0;
@@ -367,172 +157,91 @@
                 if (selectedRadio.value === 'Sim') yesCount++;
                 answers.push({ question: questions[i], answer: selectedRadio.value, observation: document.getElementById(`q${i}-obs`).value.trim() });
             }
-
             const percentage = questions.length > 0 ? Math.round((yesCount / questions.length) * 100) : 0;
-            const legend = percentage >= 80 ? 'Parabéns, você está engajado ao processo. Realizar um novo DTO depois de 60 dias.' : 'Infelizmente, este funcionário não está tão engajado. Realize um coaching sobre o processo e reavalie novamente em 7 dias.';
-            
+            const legend = percentage >= 80 ? 'Parabéns! Funcionário engajado. Novo DTO em 60 dias.' : 'Funcionário não engajado. Realizar coaching e novo DTO em 7 dias.';
             showResultModal(percentage, legend);
-            
             const resultData = { ...fields, dtoType: localDtoData[fields.dtoId].name, percentage, legend, answers, createdAt: serverTimestamp(), submitterId: userId };
             delete resultData.dtoId;
-            try { await addDoc(collection(db, getResultsPath()), resultData); navigateTo('home'); } 
-            catch (error) { console.error("Erro ao salvar o resultado: ", error); showNotification('Erro ao salvar o resultado.', 'error'); }
+            try { await addDoc(collection(db, getResultsPath()), resultData); form.reset(); document.getElementById('dtoQuestionsContainer').innerHTML = ''; } 
+            catch (error) { console.error("Erro ao salvar:", error); showNotification('Erro ao salvar o resultado.', 'error'); }
         }
-        
-        function showResultModal(percentage, legend) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center transition-all duration-300 opacity-0 scale-95"><h2 class="text-2xl font-bold mb-4">Resultado do DTO</h2><div class="text-6xl font-extrabold my-4 ${percentage >= 80 ? 'text-green-600' : 'text-red-600'}">${percentage}%</div><p class="text-lg font-medium p-4 rounded-lg ${percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${legend}</p><button class="close-btn mt-8 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg">Fechar</button></div></div>`;
-            showModal(modalHTML);
-        }
-
-        // --- LÓGICA DE HISTÓRICO ---
-        function loadHistory() {
-            if (!db || !userId) return;
-            unsubscribeAll();
-            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
-            document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
-            document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
-            
-            const unsub = onSnapshot(queryRef, (snapshot) => {
-                allHistoryData = [];
-                snapshot.forEach(doc => allHistoryData.push({id: doc.id, ...doc.data()}));
-                allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-                if (userIsAdmin) { populateAdminHistoryFilters(); updateAdminStats(); }
-                applyHistoryFilters();
-            }, (error) => { console.error("Erro ao carregar histórico: ", error); });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        function renderHistory(data) {
-            const container = document.getElementById('historyContainer');
-            if(!container) return;
-            container.innerHTML = data.length === 0 ? '<p class="text-center text-gray-500">Nenhum DTO encontrado.</p>' : '';
-            data.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-xl shadow-md border relative';
-                card.innerHTML = `<div class="cursor-pointer view-details-btn"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>
-                ${userIsAdmin ? `<button data-id="${item.id}" class="delete-history-btn absolute bottom-2 right-2 text-xs text-red-500 hover:underline">Excluir</button>` : ''}`;
-                card.querySelector('.view-details-btn').addEventListener('click', () => showDetailsModal(item));
-                container.appendChild(card);
-            });
-        }
-
-        async function deleteHistoryItem(dtoId) {
-             try { 
-                await deleteDoc(doc(db, getResultsPath(), dtoId));
-                closeModal();
-                showNotification('Registo de DTO excluído com sucesso.', 'success');
-            } catch (error) { console.error("Erro ao excluir registo:", error); showNotification('Erro ao excluir registo.', 'error'); }
-        }
-
-        function confirmDeleteHistoryItem(dtoId) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full transition-all duration-300 opacity-0 scale-95"><h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2><p class="text-gray-600 mb-6">Tem certeza que deseja excluir este registo de DTO? Esta ação é permanente.</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="button" id="confirmDeleteHistoryButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Excluir</button></div></div></div>`;
-            showModal(modalHTML);
-            document.getElementById('confirmDeleteHistoryButton').onclick = () => deleteHistoryItem(dtoId);
-        }
-
-        function populateAdminHistoryFilters() {
-            const selector = document.getElementById('filterDtoType');
-            if (!selector) return;
-            const dtoTypes = [...new Set(allHistoryData.map(item => item.dtoType))];
-            selector.innerHTML = '<option value="">Todos os Tipos</option>';
-            dtoTypes.sort().forEach(type => selector.innerHTML += `<option value="${type}">${type}</option>`);
-        }
-        
-        function applyHistoryFilters() {
-            const nameFilter = document.getElementById('filterName')?.value.toLowerCase() || '';
-            const typeFilter = document.getElementById('filterDtoType')?.value || '';
-            const dateFilter = document.getElementById('filterDate')?.value || '';
-            let dataToRender = userIsAdmin ? allHistoryData : allHistoryData.filter(item => item.submitterId === userId);
-            if (userIsAdmin) {
-                 dataToRender = dataToRender.filter(item => (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter));
-            }
-            renderHistory(dataToRender);
-        }
-
-        function showDetailsModal(data) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full max-h-[90vh] flex flex-col transition-all duration-300 opacity-0 scale-95"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Detalhes do DTO</h2><button class="close-modal-btn text-2xl">&times;</button></div><div class="overflow-y-auto pr-4"><div class="grid grid-cols-2 gap-4 mb-4 text-sm border-b pb-4"><p><strong>Preenchido por:</strong><br>${data.userName}</p><p><strong>Responsável:</strong><br>${data.responsibleName}</p><p><strong>Data do DTO:</strong><br>${new Date(data.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</p><p><strong>Tipo de DTO:</strong><br>${data.dtoType}</p><p class="col-span-2"><strong>Motivo:</strong><br>${data.dtoReason}</p></div><div class="mb-4"><p class="font-bold">Resultado: <span class="${data.percentage >= 80 ? 'text-green-600' : 'text-red-600'}">${data.percentage}%</span></p><p class="mt-2 p-2 bg-gray-100 rounded-md"><strong>Recomendação:</strong> ${data.legend}</p></div><h4 class="font-bold mb-2">Respostas:</h4><div class="space-y-3">${(data.answers || []).map(a => `<div class="p-2 border rounded-md bg-gray-50/50"><p>${a.question}</p><p class="font-semibold ${a.answer === 'Sim' ? 'text-green-700' : 'text-red-700'}">Resposta: ${a.answer}</p>${a.observation ? `<p class="text-xs mt-1"><em>Obs: ${a.observation}</em></p>` : ''}</div>`).join('')}</div></div></div></div>`;
-            showModal(modalHTML);
-        }
-
-        function exportToExcel() {
-            const nameFilter = document.getElementById('filterName')?.value.toLowerCase() || '';
-            const typeFilter = document.getElementById('filterDtoType')?.value || '';
-            const dateFilter = document.getElementById('filterDate')?.value || '';
-            const dataToExport = allHistoryData.filter(item => (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter))
-            .map(dto => {
-                const baseData = {
-                    "Data do DTO": dto.dtoDate, "Nome do Colaborador": dto.userName, "Responsável": dto.responsibleName,
-                    "Tipo de DTO": dto.dtoType, "Motivo": dto.dtoReason, "Assertividade (%)": dto.percentage, "Recomendação": dto.legend
-                };
-                if (dto.answers && Array.isArray(dto.answers)) {
-                    dto.answers.forEach((answer, index) => {
-                        baseData[`Pergunta ${index + 1}`] = answer.question;
-                        baseData[`Resposta ${index + 1}`] = answer.answer;
-                        baseData[`Observação ${index + 1}`] = answer.observation;
-                    });
-                }
-                return baseData;
-            });
-
-            if (dataToExport.length === 0) { showNotification("Nenhum dado para exportar com os filtros atuais.", "error"); return; }
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "DTOs");
-            XLSX.writeFile(workbook, "Relatorio_DTOs_por_Linha.xlsx");
-        }
-
-        function updateAdminStats() {
-            if (!userIsAdmin) return;
-            const stats = { total: document.getElementById('statTotalDtos'), avg: document.getElementById('statAvgAssert'), recent: document.getElementById('statRecentDtos') };
-            if (!stats.total) return;
-
-            const total = allHistoryData.length;
-            const avg = total > 0 ? Math.round(allHistoryData.reduce((acc, item) => acc + item.percentage, 0) / total) : 0;
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const recent = allHistoryData.filter(item => item.createdAt?.toDate() > sevenDaysAgo).length;
-            stats.total.textContent = total;
-            stats.avg.textContent = `${avg}%`;
-            stats.recent.textContent = recent;
-        }
-
-        // --- Event Delegation ---
         document.addEventListener('DOMContentLoaded', () => {
-            setupFirebase();
-            ui.navHome.addEventListener('click', () => navigateTo('home'));
-            ui.navHistory.addEventListener('click', () => navigateTo('history'));
-            ui.navAdmin.addEventListener('click', () => navigateTo('admin'));
-            ui.logoutButton.addEventListener('click', () => { signOut(auth).then(() => { userIsAdmin = false; ui.adminIndicator.classList.add('hidden'); }); });
-
-            document.body.addEventListener('change', e => {
-                if (e.target.matches('#dtoTypeSelector')) renderQuestions(e.target.value);
-                if (e.target.matches('#filterName, #filterDtoType, #filterDate')) applyHistoryFilters();
-                if (e.target.matches('#importInput')) {
-                    const file = e.target.files[0];
-                    if (file) importFromExcel(file);
-                }
+            onAuthStateChanged(auth, user => { if (user) { userId = user.uid; loadAndPopulateDtos(); } else { signInAnonymously(auth); } });
+            document.getElementById('dtoDate').valueAsDate = new Date();
+            document.getElementById('dtoTypeSelector').addEventListener('change', (e) => renderQuestions(e.target.value));
+            document.getElementById('mainDtoForm').addEventListener('submit', submitDtoForm);
+        });
+    </script>
+</body>
+</html>
+ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId;
+        let localDtoData = {};
+        const getDefinitionsPath = () => `dto_definitions`;
+        const getResultsPath = () => `dto_results`;
+        function showNotification(message, type = 'success') { /* ... */ }
+        function showResultModal(percentage, legend) { /* ... */ }
+        function closeModal() { /* ... */ }
+        function loadAndPopulateDtos() {
+            onSnapshot(collection(db, getDefinitionsPath()), (snapshot) => {
+                localDtoData = {};
+                const dtos = [];
+                snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
+                dtos.sort((a,b) => a.name.localeCompare(b.name));
+                dtos.forEach(dto => { localDtoData[dto.id] = dto; });
+                populateDtoSelector();
             });
-
-            document.body.addEventListener('click', e => {
-                const target = e.target;
-                if (target.closest('#addDtoButton')) openAdminDtoModal();
-                if (target.closest('.edit-btn')) {
-                    const dtoDef = localDtoData[target.dataset.id];
-                    if(dtoDef) openAdminDtoModal({id: target.dataset.id, data: dtoDef });
-                }
-                if (target.closest('.delete-btn')) confirmDeleteDto(target.dataset.id);
-                if (target.closest('.delete-history-btn')) confirmDeleteHistoryItem(target.dataset.id);
-                if (target.closest('.close-btn') || target.closest('.cancel-btn') || target.closest('.close-modal-btn')) closeModal();
-                if (target.closest('#exportExcelButton')) exportToExcel();
-                if (target.closest('#addQuestionButton')) addQuestionInput();
-                if (target.closest('#importExcelButtonAdmin')) document.getElementById('importInput').click();
+        }
+        function populateDtoSelector() {
+            const selector = document.getElementById('dtoTypeSelector');
+            if (!selector) return;
+            selector.innerHTML = '<option value="">-- Selecione um DTO --</option>';
+            for (const id in localDtoData) {
+                selector.innerHTML += `<option value="${id}">${localDtoData[id].name}</option>`;
+            }
+        }
+        function renderQuestions(dtoId) {
+            const container = document.getElementById('dtoQuestionsContainer');
+            const button = document.getElementById('submitButton');
+            if (!container || !button) return;
+            const questions = localDtoData[dtoId]?.questions || [];
+            container.innerHTML = ''; 
+            button.disabled = questions.length === 0;
+            questions.forEach((question, index) => {
+                const qId = `q${index}`;
+                container.innerHTML += `<div class="p-4 border rounded-lg bg-gray-50/50"><p class="font-medium mb-3">${index + 1}. ${question}</p><div class="flex flex-col sm:flex-row items-center gap-4"><div class="flex items-center gap-4"><label class="flex items-center cursor-pointer"><input type="radio" name="${qId}" value="Sim" class="form-radio h-5 w-5 text-green-600" required><span class="ml-2 text-green-700 font-semibold">Sim</span></label><label class="flex items-center cursor-pointer"><input type="radio" name="${qId}" value="Não" class="form-radio h-5 w-5 text-red-600" required><span class="ml-2 text-red-700 font-semibold">Não</span></label></div><input type="text" id="${qId}-obs" placeholder="Observação (opcional)" class="flex-grow p-2 border rounded-md"></div></div>`;
             });
-
-             document.body.addEventListener('submit', e => {
-                e.preventDefault();
-                if(e.target.matches('#passwordForm')) handleAdminLoginAttempt(e);
-                if(e.target.matches('#adminDtoForm')) saveAdminDto(e);
-                if(e.target.matches('#mainDtoForm')) submitDtoForm(e);
-            });
+        }
+        async function submitDtoForm(event) {
+            event.preventDefault();
+            const form = document.getElementById('mainDtoForm');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            const fields = { userName: document.getElementById('userName').value.trim(), responsibleName: document.getElementById('responsibleName').value.trim(), dtoReason: document.getElementById('dtoReason').value.trim(), dtoDate: document.getElementById('dtoDate').value, dtoId: document.getElementById('dtoTypeSelector').value };
+            if (Object.values(fields).some(val => !val)) { showNotification('Por favor, preencha todos os campos de informação.', 'error'); return; }
+            const questions = localDtoData[fields.dtoId]?.questions || [];
+            const answers = [];
+            let yesCount = 0;
+            for (let i = 0; i < questions.length; i++) {
+                const selectedRadio = document.querySelector(`input[name="q${i}"]:checked`);
+                if (selectedRadio.value === 'Sim') yesCount++;
+                answers.push({ question: questions[i], answer: selectedRadio.value, observation: document.getElementById(`q${i}-obs`).value.trim() });
+            }
+            const percentage = questions.length > 0 ? Math.round((yesCount / questions.length) * 100) : 0;
+            const legend = percentage >= 80 ? 'Parabéns! Funcionário engajado. Novo DTO em 60 dias.' : 'Funcionário não engajado. Realizar coaching e novo DTO em 7 dias.';
+            showResultModal(percentage, legend);
+            const resultData = { ...fields, dtoType: localDtoData[fields.dtoId].name, percentage, legend, answers, createdAt: serverTimestamp(), submitterId: userId };
+            delete resultData.dtoId;
+            try { await addDoc(collection(db, getResultsPath()), resultData); form.reset(); document.getElementById('dtoQuestionsContainer').innerHTML = ''; } 
+            catch (error) { console.error("Erro ao salvar:", error); showNotification('Erro ao salvar o resultado.', 'error'); }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, user => { if (user) { userId = user.uid; loadAndPopulateDtos(); } else { signInAnonymously(auth); } });
+            document.getElementById('dtoDate').valueAsDate = new Date();
+            document.getElementById('dtoTypeSelector').addEventListener('change', (e) => renderQuestions(e.target.value));
+            document.getElementById('mainDtoForm').addEventListener('submit', submitDtoForm);
         });
     </script>
 </body>
