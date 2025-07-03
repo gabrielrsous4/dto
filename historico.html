@@ -58,9 +58,7 @@
             document.getElementById('modalContainer').appendChild(modalWrapper);
         }
 
-        function closeModal() {
-            document.getElementById('modalContainer').innerHTML = '';
-        }
+        function closeModal() { document.getElementById('modalContainer').innerHTML = ''; }
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -74,13 +72,13 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                    apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+                   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
   messagingSenderId: "891349230977",
   appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG
+  measurementId: "G-5PCK967ESG"
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
                     document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
@@ -110,7 +108,7 @@
                 allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
                 if (userIsAdmin) populateAdminHistoryFilters();
                 applyHistoryFilters();
-            }, (error) => { console.error("Erro ao carregar histórico: ", error); });
+            });
         }
 
         function renderHistory(data) {
