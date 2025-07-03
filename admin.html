@@ -72,13 +72,13 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+                    apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
   messagingSenderId: "891349230977",
   appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG"
+  measurementId: "G-5PCK967ESG
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
                     document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
@@ -203,6 +203,7 @@
                 if (e.target.closest('.delete-btn')) confirmDeleteDto(e.target.dataset.id);
                 if (e.target.closest('.cancel-btn') || e.target.closest('.close-modal-btn')) closeModal();
                 if (e.target.closest('#importExcelButtonAdmin')) document.getElementById('importInput').click();
+                if (e.target.closest('#addQuestionButton')) addQuestionInput();
             });
             document.body.addEventListener('submit', e => {
                 e.preventDefault();
