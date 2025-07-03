@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist DTO - Histórico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; }
+        .nav-btn:hover { background-color: #e0e7ff; }
+        .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: #22c55e; } .toast.error { background-color: #ef4444; }
+        .modal-wrapper { transition: opacity 300ms ease-in-out; }
+        .modal-content { transition: all 300ms ease-out; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
+        <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
+            <a href="index.html" class="nav-btn">Realizar DTO</a>
+            <a href="historico.html" class="nav-btn active">Histórico</a>
+            <a href="admin.html" class="nav-btn">Admin</a>
+        </nav>
+        <section id="historyPage">
+            <h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800">Carregando Histórico...</h2>
+            <div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" id="filterName" placeholder="Filtrar por nome..." class="p-2 border rounded-md">
+                <select id="filterDtoType" class="p-2 border rounded-md bg-white"></select>
+                <input type="date" id="filterDate" class="p-2 border rounded-md">
+                <button id="exportExcelButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Exportar Excel</button>
+            </div>
+            <div id="historyContainer" class="space-y-4"><p class="text-center text-gray-500">Aguardando dados...</p></div>
+        </section>
+    </div>
+    <div id="modalContainer"></div>
+    <div id="toastContainer"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db, auth, userId;
+        let allHistoryData = [];
+        const appId = 'dto_checklist_global_app';
+
+        const getResultsPath = () => `dto_results_${appId}`;
+        
+        function showModal(html) {
+            const modalWrapper = document.createElement('div');
+            modalWrapper.innerHTML = html;
+            document.getElementById('modalContainer').innerHTML = '';
+            document.getElementById('modalContainer').appendChild(modalWrapper);
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+
+        function showNotification(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        async function setupFirebase() {
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+  authDomain: "sistema-dto.firebaseapp.com",
+  projectId: "sistema-dto",
+  storageBucket: "sistema-dto.firebasestorage.app",
+  messagingSenderId: "891349230977",
+  appId: "1:891349230977:web:e00a4c099207ede32db480",
+  measurementId: "G-5PCK967ESG"
+                };
+                if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
+                    document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
+                    return;
+                }
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) { userId = user.uid; loadHistory(); }
+                });
+                if (!auth.currentUser) { await signInAnonymously(auth); }
+            } catch (error) { console.error("Erro Firebase:", error); }
+        }
+
+        function loadHistory() {
+            const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
+            let queryRef;
+            if (userIsAdmin) {
+                queryRef = query(collection(db, getResultsPath()));
+            } else {
+                if (!userId) return;
+                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
+            }
+            
+            document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
+            document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
+            
+            onSnapshot(queryRef, (snapshot) => {
+                allHistoryData = [];
+                snapshot.forEach(doc => allHistoryData.push({id: doc.id, ...doc.data()}));
+                allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                if (userIsAdmin) populateAdminHistoryFilters();
+                applyHistoryFilters();
+            });
+        }
+
+        function renderHistory(data) {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = data.length === 0 ? '<p class="text-center text-gray-500">Nenhum DTO encontrado.</p>' : '';
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-xl shadow-md border relative';
+                card.innerHTML = `<div class="cursor-pointer view-details-btn"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>
+                ${sessionStorage.getItem('isAdmin') === 'true' ? `<button data-id="${item.id}" class="delete-history-btn absolute bottom-2 right-2 text-xs text-red-500 hover:underline">Excluir</button>` : ''}`;
+                card.querySelector('.view-details-btn').addEventListener('click', () => showDetailsModal(item));
+                container.appendChild(card);
+            });
+        }
+
+        function populateAdminHistoryFilters() {
+            const selector = document.getElementById('filterDtoType');
+            if (!selector) return;
+            const dtoTypes = [...new Set(allHistoryData.map(item => item.dtoType))];
+            selector.innerHTML = '<option value="">Todos os Tipos</option>';
+            dtoTypes.sort().forEach(type => selector.innerHTML += `<option value="${type}">${type}</option>`);
+        }
+        
+        function applyHistoryFilters() {
+            const nameFilter = document.getElementById('filterName')?.value.toLowerCase() || '';
+            const typeFilter = document.getElementById('filterDtoType')?.value || '';
+            const dateFilter = document.getElementById('filterDate')?.value || '';
+            let dataToRender = allHistoryData;
+            if (sessionStorage.getItem('isAdmin') === 'true') {
+                 dataToRender = dataToRender.filter(item => (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter));
+            }
+            renderHistory(dataToRender);
+        }
+
+        function showDetailsModal(data) {
+            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full max-h-[90vh] flex flex-col"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Detalhes do DTO</h2><button class="close-modal-btn text-2xl">&times;</button></div><div class="overflow-y-auto pr-4"><div class="grid grid-cols-2 gap-4 mb-4 text-sm border-b pb-4"><p><strong>Preenchido por:</strong><br>${data.userName}</p><p><strong>Responsável:</strong><br>${data.responsibleName}</p><p><strong>Data do DTO:</strong><br>${new Date(data.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</p><p><strong>Tipo de DTO:</strong><br>${data.dtoType}</p><p class="col-span-2"><strong>Motivo:</strong><br>${data.dtoReason}</p></div><div class="mb-4"><p class="font-bold">Resultado: <span class="${data.percentage >= 80 ? 'text-green-600' : 'text-red-600'}">${data.percentage}%</span></p><p class="mt-2 p-2 bg-gray-100 rounded-md"><strong>Recomendação:</strong> ${data.legend}</p></div><h4 class="font-bold mb-2">Respostas:</h4><div class="space-y-3">${(data.answers || []).map(a => `<div class="p-2 border rounded-md bg-gray-50/50"><p>${a.question}</p><p class="font-semibold ${a.answer === 'Sim' ? 'text-green-700' : 'text-red-700'}">Resposta: ${a.answer}</p>${a.observation ? `<p class="text-xs mt-1"><em>Obs: ${a.observation}</em></p>` : ''}</div>`).join('')}</div></div></div></div>`;
+            showModal(modalHTML);
+            document.querySelector('.close-modal-btn').addEventListener('click', closeModal);
+        }
+
+        function exportToExcel() {
+            const dataToExport = allHistoryData.filter(item => {
+                const nameFilter = document.getElementById('filterName')?.value.toLowerCase() || '';
+                const typeFilter = document.getElementById('filterDtoType')?.value || '';
+                const dateFilter = document.getElementById('filterDate')?.value || '';
+                return (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter);
+            }).map(dto => {
+                const baseData = { "Data do DTO": dto.dtoDate, "Nome do Colaborador": dto.userName, "Responsável": dto.responsibleName, "Tipo de DTO": dto.dtoType, "Motivo": dto.dtoReason, "Assertividade (%)": dto.percentage, "Recomendação": dto.legend };
+                if (dto.answers && Array.isArray(dto.answers)) {
+                    dto.answers.forEach((answer, index) => {
+                        baseData[`Pergunta ${index + 1}`] = answer.question;
+                        baseData[`Resposta ${index + 1}`] = answer.answer;
+                        baseData[`Observação ${index + 1}`] = answer.observation;
+                    });
+                }
+                return baseData;
+            });
+            if (dataToExport.length === 0) { showNotification("Nenhum dado para exportar com os filtros atuais.", "error"); return; }
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "DTOs");
+            XLSX.writeFile(workbook, "Relatorio_DTOs_por_Linha.xlsx");
+        }
+
+        async function deleteHistoryItem(dtoId) {
+             try { 
+                await deleteDoc(doc(db, getResultsPath(), dtoId));
+                closeModal();
+                showNotification('Registo de DTO excluído com sucesso.', 'success');
+            } catch (error) { console.error("Erro ao excluir registo:", error); showNotification('Erro ao excluir registo.', 'error'); }
+        }
+
+        function confirmDeleteHistoryItem(dtoId) {
+            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full"><h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2><p class="text-gray-600 mb-6">Tem certeza que deseja excluir este registo de DTO? Esta ação é permanente.</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="button" id="confirmDeleteHistoryButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Excluir</button></div></div></div>`;
+            showModal(modalHTML);
+            document.getElementById('confirmDeleteHistoryButton').onclick = () => deleteHistoryItem(dtoId);
+            document.querySelector('.cancel-btn').addEventListener('click', closeModal);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+            document.body.addEventListener('change', e => { if (e.target.matches('#filterName, #filterDtoType, #filterDate')) applyHistoryFilters(); });
+            document.body.addEventListener('click', e => {
+                if (e.target.closest('.delete-history-btn')) confirmDeleteHistoryItem(e.target.dataset.id);
+                if (e.target.closest('#exportExcelButton')) exportToExcel();
+            });
+        });
+    </script>
+</body>
+</html>

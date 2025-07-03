@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist DTO - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; }
+        .nav-btn:hover { background-color: #e0e7ff; }
+        .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background-color: #22c55e; } .toast.error { background-color: #ef4444; } .toast.info { background-color: #3b82f6; }
+        .modal-wrapper { transition: opacity 300ms ease-in-out; }
+        .modal-content { transition: all 300ms ease-out; }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .animate-shake { animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
+        <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
+            <a href="index.html" class="nav-btn">Realizar DTO</a>
+            <a href="historico.html" class="nav-btn">Histórico</a>
+            <a href="admin.html" class="nav-btn active">Admin</a>
+        </nav>
+        <div id="adminContainer"></div>
+    </div>
+    <div id="modalContainer"></div>
+    <div id="toastContainer"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db, auth;
+        let localDtoData = {};
+        let allHistoryData = [];
+        const appId = 'dto_checklist_global_app';
+
+        const getDefinitionsPath = () => `dto_definitions_${appId}`;
+        const getResultsPath = () => `dto_results_${appId}`;
+
+        function showModal(html) {
+            const modalWrapper = document.createElement('div');
+            modalWrapper.innerHTML = html;
+            document.getElementById('modalContainer').innerHTML = '';
+            document.getElementById('modalContainer').appendChild(modalWrapper);
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+
+        function showNotification(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        async function setupFirebase() {
+            try {
+                const firebaseConfig = {
+                   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+  authDomain: "sistema-dto.firebaseapp.com",
+  projectId: "sistema-dto",
+  storageBucket: "sistema-dto.firebasestorage.app",
+  messagingSenderId: "891349230977",
+  appId: "1:891349230977:web:e00a4c099207ede32db480",
+  measurementId: "G-5PCK967ESG"
+                };
+                if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
+                    document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
+                    return;
+                }
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        if (sessionStorage.getItem('isAdmin') === 'true') {
+                            renderAdminPage();
+                        } else {
+                            promptForAdminLogin();
+                        }
+                    }
+                });
+                if (!auth.currentUser) { await signInAnonymously(auth); }
+            } catch (error) { console.error("Erro Firebase:", error); }
+        }
+
+        function renderAdminPage() {
+            document.getElementById('adminContainer').innerHTML = `<section><h2 class="text-3xl font-bold text-center mb-6 text-gray-800">Painel do Administrador</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-indigo-800" id="statTotalDtos">0</p><p class="text-sm text-indigo-600">Total de DTOs</p></div><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-green-800" id="statAvgAssert">0%</p><p class="text-sm text-green-600">Média de Assertividade</p></div><div class="bg-white p-4 rounded-xl shadow-md text-center"><p class="text-3xl font-bold text-yellow-800" id="statRecentDtos">0</p><p class="text-sm text-yellow-600">DTOs (últimos 7 dias)</p></div></div><div class="bg-white p-6 rounded-2xl shadow-lg"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Gerenciar DTOs</h3><div class="flex gap-2"><button id="importExcelButtonAdmin" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Importar</button><button id="addDtoButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">+ Novo DTO</button></div></div><div id="adminDtoList" class="space-y-3"><p class="text-center text-gray-500">Carregando...</p></div></div></section><input type="file" id="importInput" class="hidden" accept=".xlsx, .xls">`;
+            loadHistory();
+            loadAdminDtoList();
+        }
+
+        function promptForAdminLogin() {
+            document.getElementById('adminContainer').innerHTML = `<div class="text-center p-8 bg-white rounded-xl shadow-lg"><h2 class="text-2xl font-bold mb-4">Acesso de Administrador</h2><p class="text-gray-600 mb-6">Por favor, insira a senha para continuar.</p><form id="passwordForm" class="flex flex-col max-w-sm mx-auto"><input type="password" id="adminPasswordInput" class="w-full p-2 border rounded-md" required><button type="submit" class="mt-4 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Entrar</button></form></div>`;
+        }
+
+        function handleAdminLoginAttempt(event) {
+            event.preventDefault();
+            const passwordInput = document.getElementById('adminPasswordInput');
+            if (passwordInput.value === "admin") {
+                sessionStorage.setItem('isAdmin', 'true');
+                renderAdminPage();
+            } else {
+                showNotification("Senha incorreta", "error");
+                passwordInput.classList.add('border-red-500', 'animate-shake');
+                setTimeout(() => passwordInput.classList.remove('border-red-500', 'animate-shake'), 800);
+            }
+        }
+
+        function loadAdminDtoList() {
+            onSnapshot(collection(db, getDefinitionsPath()), (snapshot) => {
+                const adminDtoList = document.getElementById('adminDtoList');
+                if (!adminDtoList) return;
+                localDtoData = {};
+                adminDtoList.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">Nenhum DTO cadastrado.</p>' : '';
+                const dtos = [];
+                snapshot.forEach(doc => dtos.push({ id: doc.id, data: doc.data() }));
+                dtos.sort((a,b) => a.data.name.localeCompare(b.data.name)).forEach(dto => {
+                    localDtoData[dto.id] = dto.data;
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
+                    item.innerHTML = `<span class="font-medium">${dto.data.name}</span><div class="space-x-2"><button data-id="${dto.id}" class="edit-btn text-sm text-blue-600 hover:underline">Editar</button><button data-id="${dto.id}" class="delete-btn text-sm text-red-600 hover:underline">Excluir</button></div>`;
+                    adminDtoList.appendChild(item);
+                });
+            });
+        }
+        
+        function openAdminDtoModal(dto = null) {
+            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full"><h2 class="text-2xl font-bold mb-6">${dto ? 'Editar' : 'Criar Novo'} DTO</h2><form id="adminDtoForm"><input type="hidden" id="adminDtoId" value="${dto ? dto.id : ''}"><div class="mb-4"><label for="adminDtoName" class="block text-sm font-medium">Nome do DTO</label><input type="text" id="adminDtoName" class="mt-1 w-full p-2 border rounded-md" required value="${dto ? dto.data.name : ''}"></div><div class="mb-4"><h4 class="text-sm font-medium mb-2">Perguntas</h4><div id="adminQuestionsContainer" class="space-y-2"></div><button type="button" id="addQuestionButton" class="mt-3 text-sm text-indigo-600 font-semibold">+ Adicionar Pergunta</button></div><div class="mt-8 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Salvar</button></div></form></div></div>`;
+            showModal(modalHTML);
+            const questions = dto ? dto.data.questions : [''];
+            questions.forEach(q => addQuestionInput(q));
+        }
+
+        function addQuestionInput(value = '') {
+            const container = document.getElementById('adminQuestionsContainer');
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `<input type="text" value="${value.replace(/"/g, '&quot;')}" class="question-input flex-grow p-2 border rounded-md" required><button type="button" class="delete-question-btn text-red-600">X</button>`;
+            div.querySelector('.delete-question-btn').onclick = () => div.remove();
+            container.appendChild(div);
+        }
+
+        async function saveAdminDto(event) {
+            event.preventDefault();
+            const dtoId = document.getElementById('adminDtoId').value;
+            const dtoName = document.getElementById('adminDtoName').value.trim();
+            const questionNodes = document.getElementById('adminQuestionsContainer').querySelectorAll('.question-input');
+            const questions = Array.from(questionNodes).map(input => input.value.trim()).filter(q => q);
+
+            if (!dtoName || questions.length === 0) { showNotification("Nome e pelo menos uma pergunta são obrigatórios.", "error"); return; }
+            
+            const dtoData = { name: dtoName, questions };
+            try {
+                if (dtoId) { await setDoc(doc(db, getDefinitionsPath(), dtoId), dtoData); } 
+                else { await addDoc(collection(db, getDefinitionsPath()), dtoData); }
+                closeModal();
+                showNotification(`DTO "${dtoName}" salvo com sucesso.`, 'success');
+            } catch (error) { console.error("Erro ao salvar DTO:", error); showNotification("Erro ao salvar DTO.", "error"); }
+        }
+        
+        function confirmDeleteDto(dtoId) {
+            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full"><h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2><p class="text-gray-600 mb-6">Tem certeza que deseja excluir este DTO? Esta ação não pode ser desfeita.</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="button" id="confirmDeleteButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Excluir</button></div></div></div>`;
+            showModal(modalHTML);
+            document.getElementById('confirmDeleteButton').onclick = async () => {
+                try { 
+                    await deleteDoc(doc(db, getDefinitionsPath(), dtoId));
+                    closeModal();
+                    showNotification('DTO excluído com sucesso.', 'success');
+                } catch (error) { console.error("Erro ao excluir DTO:", error); showNotification('Erro ao excluir DTO.', 'error'); }
+            };
+        }
+
+        async function importFromExcel(file) { /* ... */ }
+        function loadHistory() { /* ... */ }
+        function updateAdminStats() { /* ... */ }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+            document.body.addEventListener('click', e => {
+                if (e.target.closest('#addDtoButton')) openAdminDtoModal();
+                if (e.target.closest('.edit-btn')) {
+                    const dto = { id: e.target.dataset.id, data: localDtoData[e.target.dataset.id] };
+                    openAdminDtoModal(dto);
+                }
+                if (e.target.closest('.delete-btn')) confirmDeleteDto(e.target.dataset.id);
+                if (e.target.closest('.cancel-btn') || e.target.closest('.close-modal-btn')) closeModal();
+                if (e.target.closest('#importExcelButtonAdmin')) document.getElementById('importInput').click();
+            });
+            document.body.addEventListener('submit', e => {
+                e.preventDefault();
+                if(e.target.matches('#passwordForm')) handleAdminLoginAttempt(e);
+                if(e.target.matches('#adminDtoForm')) saveAdminDto(e);
+            });
+            document.body.addEventListener('change', e => {
+                if (e.target.matches('#importInput')) {
+                    const file = e.target.files[0];
+                    if (file) importFromExcel(file);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
