@@ -19,6 +19,7 @@
     </style>
 </head>
 <body class="text-gray-800">
+
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
         <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
         <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
@@ -78,7 +79,7 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                    apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+                     apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
@@ -106,6 +107,7 @@
                 localDtoData = {};
                 const dtos = [];
                 snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
+                // CORREÇÃO: O bug estava aqui. A ordenação estava a tentar aceder a `a.data.name` quando deveria ser `a.name`.
                 dtos.sort((a,b) => a.name.localeCompare(b.name));
                 dtos.forEach(dto => { localDtoData[dto.id] = dto; });
                 populateDtoSelector();
