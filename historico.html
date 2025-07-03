@@ -27,15 +27,15 @@
             <a href="historico.html" class="nav-btn active">Histórico</a>
             <a href="admin.html" class="nav-btn">Admin</a>
         </nav>
-        <section id="historyPage">
-            <h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800">Carregando Histórico...</h2>
+        <section id="historyPage" class="page-content">
+            <h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800"></h2>
             <div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input type="text" id="filterName" placeholder="Filtrar por nome..." class="p-2 border rounded-md">
                 <select id="filterDtoType" class="p-2 border rounded-md bg-white"></select>
                 <input type="date" id="filterDate" class="p-2 border rounded-md">
                 <button id="exportExcelButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Exportar Excel</button>
             </div>
-            <div id="historyContainer" class="space-y-4"><p class="text-center text-gray-500">Aguardando dados...</p></div>
+            <div id="historyContainer" class="space-y-4"><p class="text-center text-gray-500">Carregando...</p></div>
         </section>
     </div>
     <div id="modalContainer"></div>
@@ -80,7 +80,7 @@
   storageBucket: "sistema-dto.firebasestorage.app",
   messagingSenderId: "891349230977",
   appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG"
+  measurementId: "G-5PCK967ESG
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
                     document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
@@ -99,13 +99,7 @@
 
         function loadHistory() {
             const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            let queryRef;
-            if (userIsAdmin) {
-                queryRef = query(collection(db, getResultsPath()));
-            } else {
-                if (!userId) return;
-                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
-            }
+            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
             
             document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
             document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
@@ -116,7 +110,7 @@
                 allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
                 if (userIsAdmin) populateAdminHistoryFilters();
                 applyHistoryFilters();
-            });
+            }, (error) => { console.error("Erro ao carregar histórico: ", error); });
         }
 
         function renderHistory(data) {
@@ -145,9 +139,10 @@
             const typeFilter = document.getElementById('filterDtoType')?.value || '';
             const dateFilter = document.getElementById('filterDate')?.value || '';
             let dataToRender = allHistoryData;
-            if (sessionStorage.getItem('isAdmin') === 'true') {
-                 dataToRender = dataToRender.filter(item => (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter));
+            if (sessionStorage.getItem('isAdmin') !== 'true') {
+                 dataToRender = dataToRender.filter(item => item.submitterId === userId);
             }
+            dataToRender = dataToRender.filter(item => (!nameFilter || item.userName.toLowerCase().includes(nameFilter)) && (!typeFilter || item.dtoType === typeFilter) && (!dateFilter || item.dtoDate === dateFilter));
             renderHistory(dataToRender);
         }
 
@@ -201,6 +196,7 @@
             document.body.addEventListener('change', e => { if (e.target.matches('#filterName, #filterDtoType, #filterDate')) applyHistoryFilters(); });
             document.body.addEventListener('click', e => {
                 if (e.target.closest('.delete-history-btn')) confirmDeleteHistoryItem(e.target.dataset.id);
+                if (e.target.closest('.close-modal-btn') || e.target.closest('.cancel-btn')) closeModal();
                 if (e.target.closest('#exportExcelButton')) exportToExcel();
             });
         });
