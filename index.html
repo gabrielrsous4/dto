@@ -55,9 +55,10 @@
         
         let db, auth, userId;
         let localDtoData = {};
-        
-        const getDefinitionsPath = () => `dto_definitions`;
-        const getResultsPath = () => `dto_results`;
+        const appId = 'dto_checklist_global_app';
+
+        const getDefinitionsPath = () => `dto_definitions_${appId}`;
+        const getResultsPath = () => `dto_results_${appId}`;
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -107,7 +108,6 @@
                 localDtoData = {};
                 const dtos = [];
                 snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
-                // CORREÇÃO: O bug estava aqui. A ordenação estava a tentar aceder a `a.data.name` quando deveria ser `a.name`.
                 dtos.sort((a,b) => a.name.localeCompare(b.name));
                 dtos.forEach(dto => { localDtoData[dto.id] = dto; });
                 populateDtoSelector();
