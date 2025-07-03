@@ -55,9 +55,10 @@
         
         let db, auth, userId;
         let localDtoData = {};
-        
-        const getDefinitionsPath = () => `dto_definitions`;
-        const getResultsPath = () => `dto_results`;
+        const appId = 'dto_checklist_global_app';
+
+        const getDefinitionsPath = () => `dto_definitions_${appId}`;
+        const getResultsPath = () => `dto_results_${appId}`;
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -88,7 +89,7 @@
   measurementId: "G-5PCK967ESG"
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
-                    document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código. Por favor, siga as instruções para configurar a sua base de dados.</div>`;
+                    document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
                     return;
                 }
                 const app = initializeApp(firebaseConfig);
@@ -107,7 +108,7 @@
                 localDtoData = {};
                 const dtos = [];
                 snapshot.forEach(doc => dtos.push({ id: doc.id, ...doc.data() }));
-                dtos.sort((a,b) => a.name.localeCompare(b.name));
+                dtos.sort((a,b) => a.data.name.localeCompare(b.data.name));
                 dtos.forEach(dto => { localDtoData[dto.id] = dto; });
                 populateDtoSelector();
             });
