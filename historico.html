@@ -81,7 +81,7 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                    const firebaseConfig = {
+                   const firebaseConfig = {
   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
@@ -119,8 +119,8 @@
                 if (userIsAdmin) populateAdminHistoryFilters();
                 applyHistoryFilters();
             }, (error) => {
-                console.error("Erro ao carregar histórico:", error);
-                document.getElementById('historyContainer').innerHTML = `<p class="text-center text-red-500">Erro ao carregar o histórico. Verifique as permissões da base de dados.</p>`;
+                console.error("Erro ao carregar histórico: ", error);
+                document.getElementById('historyContainer').innerHTML = `<div class="text-center p-4 bg-red-100 text-red-700 rounded-lg"><p class="font-bold">Erro ao carregar o histórico.</p><p class="text-sm">Causa provável: Permissões da base de dados (Firestore) não estão configuradas corretamente.</p><p class="text-sm mt-2">Por favor, siga o guia para corrigir as regras de segurança no seu projeto Firebase.</p></div>`;
             });
         }
 
