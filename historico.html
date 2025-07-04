@@ -118,6 +118,9 @@
                 allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
                 if (userIsAdmin) populateAdminHistoryFilters();
                 applyHistoryFilters();
+            }, (error) => {
+                console.error("Erro ao carregar histórico:", error);
+                document.getElementById('historyContainer').innerHTML = `<p class="text-center text-red-500">Erro ao carregar o histórico. Verifique as permissões da base de dados.</p>`;
             });
         }
 
