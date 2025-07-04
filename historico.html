@@ -72,7 +72,7 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+  apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
@@ -97,7 +97,13 @@
 
         function loadHistory() {
             const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
+            let queryRef;
+            if (userIsAdmin) {
+                queryRef = query(collection(db, getResultsPath()));
+            } else {
+                if (!userId) return;
+                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
+            }
             
             document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
             document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
