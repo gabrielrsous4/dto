@@ -29,11 +29,19 @@
         </nav>
         <section id="historyPage" class="page-content">
             <h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800"></h2>
-            <div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-5 gap-4">
                 <input type="text" id="filterName" placeholder="Filtrar por nome..." class="p-2 border rounded-md">
                 <select id="filterDtoType" class="p-2 border rounded-md bg-white"></select>
                 <input type="date" id="filterDate" class="p-2 border rounded-md">
+                <button id="selectModeButton" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600">Selecionar</button>
                 <button id="exportExcelButton" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Exportar Excel</button>
+            </div>
+            <div id="selectionActions" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center justify-between">
+                <span id="selectionCount">0 itens selecionados</span>
+                <div>
+                    <button id="deleteSelectedButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">Excluir Selecionados</button>
+                    <button id="cancelSelectionButton" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 ml-2">Cancelar</button>
+                </div>
             </div>
             <div id="historyContainer" class="space-y-4"><p class="text-center text-gray-500">Carregando...</p></div>
         </section>
@@ -43,10 +51,11 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, where, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, where, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let db, auth, userId;
         let allHistoryData = [];
+        let selectionMode = false;
         const appId = 'dto_checklist_global_app';
 
         const getResultsPath = () => `dto_results_${appId}`;
@@ -72,6 +81,7 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
+                   const firebaseConfig = {
   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
@@ -97,13 +107,7 @@
 
         function loadHistory() {
             const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            let queryRef;
-            if (userIsAdmin) {
-                queryRef = query(collection(db, getResultsPath()));
-            } else {
-                if (!userId) return;
-                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
-            }
+            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
             
             document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
             document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
@@ -122,9 +126,12 @@
             container.innerHTML = data.length === 0 ? '<p class="text-center text-gray-500">Nenhum DTO encontrado.</p>' : '';
             data.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-xl shadow-md border relative';
-                card.innerHTML = `<div class="cursor-pointer view-details-btn"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>
-                ${sessionStorage.getItem('isAdmin') === 'true' ? `<button data-id="${item.id}" class="delete-history-btn absolute bottom-2 right-2 text-xs text-red-500 hover:underline">Excluir</button>` : ''}`;
+                card.className = 'bg-white p-5 rounded-xl shadow-md border relative flex items-center gap-4';
+                let checkboxHTML = '';
+                if (selectionMode) {
+                    checkboxHTML = `<input type="checkbox" data-id="${item.id}" class="history-checkbox h-6 w-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">`;
+                }
+                card.innerHTML = `${checkboxHTML}<div class="cursor-pointer view-details-btn flex-grow"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>`;
                 card.querySelector('.view-details-btn').addEventListener('click', () => showDetailsModal(item));
                 container.appendChild(card);
             });
@@ -180,26 +187,49 @@
             XLSX.writeFile(workbook, "Relatorio_DTOs_por_Linha.xlsx");
         }
 
-        async function deleteHistoryItem(dtoId) {
-             try { 
-                await deleteDoc(doc(db, getResultsPath(), dtoId));
-                closeModal();
-                showNotification('Registo de DTO excluído com sucesso.', 'success');
-            } catch (error) { console.error("Erro ao excluir registo:", error); showNotification('Erro ao excluir registo.', 'error'); }
+        async function deleteSelectedItems() {
+            const selectedItems = document.querySelectorAll('.history-checkbox:checked');
+            if (selectedItems.length === 0) {
+                showNotification("Nenhum item selecionado.", "error");
+                return;
+            }
+            const batch = writeBatch(db);
+            selectedItems.forEach(item => {
+                const docRef = doc(db, getResultsPath(), item.dataset.id);
+                batch.delete(docRef);
+            });
+            try {
+                await batch.commit();
+                showNotification(`${selectedItems.length} registos excluídos com sucesso.`, 'success');
+                toggleSelectionMode(false);
+            } catch (error) {
+                console.error("Erro ao excluir registos:", error);
+                showNotification("Erro ao excluir registos.", "error");
+            }
         }
 
-        function confirmDeleteHistoryItem(dtoId) {
-            const modalHTML = `<div class="modal-wrapper fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><div class="modal-content bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full"><h2 class="text-xl font-bold mb-4">Confirmar Exclusão</h2><p class="text-gray-600 mb-6">Tem certeza que deseja excluir este registo de DTO? Esta ação é permanente.</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="cancel-btn bg-gray-200 font-bold py-2 px-4 rounded-lg">Cancelar</button><button type="button" id="confirmDeleteHistoryButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Excluir</button></div></div></div>`;
-            showModal(modalHTML);
-            document.getElementById('confirmDeleteHistoryButton').onclick = () => deleteHistoryItem(dtoId);
-            document.querySelector('.cancel-btn').addEventListener('click', closeModal);
+        function toggleSelectionMode(forceState) {
+            selectionMode = typeof forceState === 'boolean' ? forceState : !selectionMode;
+            document.getElementById('historyFilters').classList.toggle('hidden', selectionMode);
+            document.getElementById('selectionActions').classList.toggle('hidden', !selectionMode);
+            applyHistoryFilters();
+        }
+
+        function updateSelectionCount() {
+            const count = document.querySelectorAll('.history-checkbox:checked').length;
+            document.getElementById('selectionCount').textContent = `${count} itens selecionados`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             setupFirebase();
-            document.body.addEventListener('change', e => { if (e.target.matches('#filterName, #filterDtoType, #filterDate')) applyHistoryFilters(); });
+            document.body.addEventListener('change', e => { 
+                if (e.target.matches('#filterName, #filterDtoType, #filterDate')) applyHistoryFilters();
+                if (e.target.matches('.history-checkbox')) updateSelectionCount();
+            });
             document.body.addEventListener('click', e => {
-                if (e.target.closest('.delete-history-btn')) confirmDeleteHistoryItem(e.target.dataset.id);
+                if (e.target.closest('#selectModeButton')) toggleSelectionMode();
+                if (e.target.closest('#cancelSelectionButton')) toggleSelectionMode(false);
+                if (e.target.closest('#deleteSelectedButton')) deleteSelectedItems();
                 if (e.target.closest('.close-modal-btn') || e.target.closest('.cancel-btn')) closeModal();
                 if (e.target.closest('#exportExcelButton')) exportToExcel();
             });
