@@ -55,10 +55,9 @@
         
         let db, auth, userId;
         let localDtoData = {};
-        const appId = 'dto_checklist_global_app';
-
-        const getDefinitionsPath = () => `dto_definitions_${appId}`;
-        const getResultsPath = () => `dto_results_${appId}`;
+        
+        const getDefinitionsPath = () => `dto_definitions`;
+        const getResultsPath = () => `dto_results`;
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -80,7 +79,8 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                     apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
+                    const firebaseConfig = {
+  apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
