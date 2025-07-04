@@ -57,10 +57,9 @@
         let allHistoryData = [];
         let selectionMode = false;
         let unsubscribeHistory = null;
-        const appId = 'dto_checklist_global_app';
-
-        const getResultsPath = () => `dto_results_${appId}`;
         
+        const getResultsPath = () => `dto_results`;
+
         function showModal(html) {
             const modalWrapper = document.createElement('div');
             modalWrapper.innerHTML = html;
@@ -89,7 +88,7 @@
   storageBucket: "sistema-dto.firebasestorage.app",
   messagingSenderId: "891349230977",
   appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG""
+  measurementId: "G-5PCK967ESG"
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
                     document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
@@ -109,13 +108,7 @@
         function loadHistory() {
             if (unsubscribeHistory) unsubscribeHistory();
             const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            let queryRef;
-            if (userIsAdmin) {
-                queryRef = query(collection(db, getResultsPath()));
-            } else {
-                if (!userId) return;
-                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
-            }
+            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
             
             document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
             document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
