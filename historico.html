@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; }
+        .nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; color: #4f46e5; transition: all 0.2s; cursor: pointer; }
         .nav-btn:hover { background-color: #e0e7ff; }
         .nav-btn.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease-out; }
@@ -27,7 +27,7 @@
             <a href="historico.html" class="nav-btn active">Histórico</a>
             <a href="admin.html" class="nav-btn">Admin</a>
         </nav>
-        <section id="historyPage" class="page-content">
+        <section id="historyPage">
             <h2 id="historyTitle" class="text-3xl font-bold text-center mb-6 text-gray-800"></h2>
             <div id="historyFilters" class="hidden bg-white p-4 rounded-xl shadow-md mb-6 items-center grid grid-cols-1 md:grid-cols-5 gap-4">
                 <input type="text" id="filterName" placeholder="Filtrar por nome..." class="p-2 border rounded-md">
@@ -56,6 +56,7 @@
         let db, auth, userId;
         let allHistoryData = [];
         let selectionMode = false;
+        let unsubscribeHistory = null;
         const appId = 'dto_checklist_global_app';
 
         const getResultsPath = () => `dto_results_${appId}`;
@@ -81,14 +82,14 @@
         async function setupFirebase() {
             try {
                 const firebaseConfig = {
-                   const firebaseConfig = {
+                    const firebaseConfig = {
   apiKey: "AIzaSyC-DaovjkIu0GYmYFbN0ELV3Jj022ivyno",
   authDomain: "sistema-dto.firebaseapp.com",
   projectId: "sistema-dto",
   storageBucket: "sistema-dto.firebasestorage.app",
   messagingSenderId: "891349230977",
   appId: "1:891349230977:web:e00a4c099207ede32db480",
-  measurementId: "G-5PCK967ESG"
+  measurementId: "G-5PCK967ESG""
                 };
                 if(firebaseConfig.apiKey.startsWith("COLE-AQUI")) {
                     document.body.innerHTML = `<div class="text-center p-8 text-red-600 font-bold">ERRO: As credenciais do Firebase não foram inseridas no código.</div>`;
@@ -106,13 +107,20 @@
         }
 
         function loadHistory() {
+            if (unsubscribeHistory) unsubscribeHistory();
             const userIsAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            let queryRef = userIsAdmin ? query(collection(db, getResultsPath())) : query(collection(db, getResultsPath()), where("submitterId", "==", userId));
+            let queryRef;
+            if (userIsAdmin) {
+                queryRef = query(collection(db, getResultsPath()));
+            } else {
+                if (!userId) return;
+                queryRef = query(collection(db, getResultsPath()), where("submitterId", "==", userId));
+            }
             
             document.getElementById('historyTitle').textContent = userIsAdmin ? "Histórico Geral de DTOs" : "Seu Histórico de DTOs";
             document.getElementById('historyFilters').classList.toggle('hidden', !userIsAdmin);
             
-            onSnapshot(queryRef, (snapshot) => {
+            unsubscribeHistory = onSnapshot(queryRef, (snapshot) => {
                 allHistoryData = [];
                 snapshot.forEach(doc => allHistoryData.push({id: doc.id, ...doc.data()}));
                 allHistoryData.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
@@ -120,7 +128,7 @@
                 applyHistoryFilters();
             }, (error) => {
                 console.error("Erro ao carregar histórico: ", error);
-                document.getElementById('historyContainer').innerHTML = `<div class="text-center p-4 bg-red-100 text-red-700 rounded-lg"><p class="font-bold">Erro ao carregar o histórico.</p><p class="text-sm">Causa provável: Permissões da base de dados (Firestore) não estão configuradas corretamente.</p><p class="text-sm mt-2">Por favor, siga o guia para corrigir as regras de segurança no seu projeto Firebase.</p></div>`;
+                document.getElementById('historyContainer').innerHTML = `<div class="text-center p-4 bg-red-100 text-red-700 rounded-lg"><p class="font-bold">Erro ao carregar o histórico.</p><p class="text-sm">Causa provável: Permissões da base de dados (Firestore) não estão configuradas corretamente.</p></div>`;
             });
         }
 
