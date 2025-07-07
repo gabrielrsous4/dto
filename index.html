@@ -19,6 +19,7 @@
     </style>
 </head>
 <body class="text-gray-800">
+
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
         <header class="text-center mb-6"><h1 class="text-4xl font-bold text-indigo-600">Checklist DTO</h1></header>
         <nav class="flex justify-center items-center gap-2 md:gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm">
@@ -54,9 +55,10 @@
         
         let db, auth, userId;
         let localDtoData = {};
-        
-        const getDefinitionsPath = () => `dto_definitions`;
-        const getResultsPath = () => `dto_results`;
+        const appId = 'dto_checklist_global_app';
+
+        const getDefinitionsPath = () => `dto_definitions_${appId}`;
+        const getResultsPath = () => `dto_results_${appId}`;
 
         function showNotification(message, type = 'success') {
             const toast = document.createElement('div');
@@ -125,7 +127,7 @@
             const container = document.getElementById('dtoQuestionsContainer');
             const button = document.getElementById('submitButton');
             if (!container || !button) return;
-            const questions = localDtoData[dtoId]?.questions || [];
+            const questions = localDtoData[dtoId]?.data.questions || [];
             container.innerHTML = ''; 
             button.disabled = questions.length === 0;
             questions.forEach((question, index) => {
@@ -142,7 +144,7 @@
             const fields = { userName: document.getElementById('userName').value.trim(), responsibleName: document.getElementById('responsibleName').value.trim(), dtoReason: document.getElementById('dtoReason').value.trim(), dtoDate: document.getElementById('dtoDate').value, dtoId: document.getElementById('dtoTypeSelector').value };
             if (Object.values(fields).some(val => !val)) { showNotification('Por favor, preencha todos os campos de informação.', 'error'); return; }
 
-            const questions = localDtoData[fields.dtoId]?.questions || [];
+            const questions = localDtoData[fields.dtoId]?.data.questions || [];
             const answers = [];
             let yesCount = 0;
             for (let i = 0; i < questions.length; i++) {
