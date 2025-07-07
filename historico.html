@@ -58,7 +58,8 @@
         let selectionMode = false;
         let unsubscribeHistory = null;
         
-        const getResultsPath = () => `dto_results`;
+        const appId = 'dto_checklist_global_app';
+        const getResultsPath = () => `dto_results_${appId}`;
         
         function showModal(html) {
             const modalWrapper = document.createElement('div');
@@ -134,7 +135,8 @@
                 if (selectionMode) {
                     checkboxHTML = `<input type="checkbox" data-id="${item.id}" class="history-checkbox h-6 w-6 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">`;
                 }
-                card.innerHTML = `${checkboxHTML}<div class="cursor-pointer view-details-btn flex-grow"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>`;
+                card.innerHTML = `${checkboxHTML}<div class="cursor-pointer view-details-btn flex-grow"><div class="flex justify-between items-start gap-4"><div><h3 class="font-bold text-lg text-indigo-700">${item.dtoType}</h3><p class="text-sm">Por: <strong>${item.userName}</strong></p><p class="text-sm">Data: <strong>${new Date(item.dtoDate + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></p></div><span class="text-xl font-bold px-3 py-1 rounded-full ${item.percentage >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${item.percentage}%</span></div></div>
+                ${sessionStorage.getItem('isAdmin') === 'true' ? `<button data-id="${item.id}" class="delete-history-btn absolute bottom-2 right-2 text-xs text-red-500 hover:underline">Excluir</button>` : ''}`;
                 card.querySelector('.view-details-btn').addEventListener('click', () => showDetailsModal(item));
                 container.appendChild(card);
             });
